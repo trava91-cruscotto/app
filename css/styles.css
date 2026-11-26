@@ -1,0 +1,74 @@
+/* Stile minimo: la grafica vera arriva con riepilogo ed elenco. */
+:root {
+  color-scheme: dark;
+  --sfondo: #14202b;
+  --testo: #eef3f6;
+  --tenue: #9fb0bd;
+  --accento: #5fd0a5;
+  --bordo: #324656;
+  --avviso: #ffd27a;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--sfondo);
+  color: var(--testo);
+  font: 16px/1.45 system-ui, sans-serif;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px 32px;
+}
+
+h1 { font-size: 1.25rem; }
+
+#messaggio {
+  padding: 12px;
+  border: 1px solid var(--avviso);
+  border-radius: 8px;
+  color: var(--avviso);
+}
+
+.etichetta, dt, label { color: var(--tenue); font-size: 0.875rem; }
+
+.etichetta { margin-bottom: 0; }
+
+.grande { margin-top: 4px; font-size: 2.25rem; font-weight: 700; }
+
+dd { margin: 0 0 12px; font-size: 1.125rem; }
+
+label { display: block; margin: 12px 0 4px; }
+
+input, button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 8px;
+  font: inherit;
+}
+
+input {
+  padding: 0 12px;
+  background: transparent;
+  color: var(--testo);
+  border: 1px solid var(--bordo);
+}
+
+button {
+  margin-top: 16px;
+  border: 0;
+  background: var(--accento);
+  color: var(--sfondo);
+  font-weight: 600;
+}
+
+button.secondario {
+  background: transparent;
+  color: var(--testo);
+  border: 1px solid var(--bordo);
+}

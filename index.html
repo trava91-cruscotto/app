@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Solo file propri, e in rete solo l'API di GitHub. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#14202b">
+  <title>Portafoglio</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main>
+    <h1>Portafoglio</h1>
+    <p id="messaggio" role="status" hidden></p>
+
+    <section id="vista-dati" hidden>
+      <p class="etichetta">Controvalore</p>
+      <p id="valore" class="grande"></p>
+      <dl>
+        <dt>Guadagno/perdita</dt><dd id="pl"></dd>
+        <dt>Asset prezzati</dt><dd id="prezzati"></dd>
+        <dt>Aggiornato</dt><dd id="aggiornato"></dd>
+      </dl>
+      <button type="button" id="cambia" class="secondario">Cambia accesso</button>
+    </section>
+
+    <section id="vista-setup" hidden>
+      <form id="form-setup" autocomplete="off">
+        <label for="campo-repo">Repository dei dati</label>
+        <input id="campo-repo" type="text" placeholder="utente/repository"
+               autocapitalize="none" autocorrect="off" spellcheck="false" required>
+        <label for="campo-token">Token</label>
+        <input id="campo-token" type="password" autocomplete="off"
+               autocapitalize="none" autocorrect="off" spellcheck="false" required>
+        <button type="submit">Collega</button>
+        <button type="button" id="annulla" class="secondario" hidden>Annulla</button>
+        <button type="button" id="rimuovi" class="secondario" hidden>Rimuovi accesso e copia locale</button>
+      </form>
+    </section>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

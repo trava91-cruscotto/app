@@ -1,0 +1,20 @@
+{
+  "name": "Portafoglio",
+  "short_name": "Portafoglio",
+  "description": "Riepilogo del portafoglio, in sola lettura.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#14202b",
+  "background_color": "#14202b",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
