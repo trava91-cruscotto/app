@@ -1,7 +1,8 @@
 // main.js — collegamento al repository dei dati, lettura di stato.json, ultima copia.
 
 import { ApiError, leggiJson } from "./api.js";
-import { disegna, svuota } from "./ui.js";
+import { attiva, controlla, disiscrivi } from "./notifiche.js";
+import { disegna, disegnaNotifiche, messaggioNotifiche, svuota } from "./ui.js";
 
 const CHIAVI = { repo: "ptf.repo", token: "ptf.token", copia: "ptf.stato" };
 const REPO_VALIDO = /^[A-Za-z0-9-]+\/(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
@@ -95,7 +96,51 @@ function mostraSetup() {
   $("campo-token").value = "";
   $("annulla").hidden = !attuale;
   $("rimuovi").hidden = !attuale;
+  // Le notifiche compaiono solo aprendo le Impostazioni (mostraNotifiche).
+  giroNotifiche++;
+  $("notifiche").hidden = true;
+  $("titolo-accesso").hidden = true;
   $("vista-setup").hidden = false;
+}
+
+// --- notifiche ---------------------------------------------------------------
+
+let giroNotifiche = 0;        // come "giro": le risposte superate non ridisegnano
+let attivazione = false;      // un'attivazione per volta
+
+const testoErrore = (e) => (e instanceof ApiError ? e.message : "Errore inatteso.");
+
+async function mostraNotifiche() {
+  const mio = ++giroNotifiche;
+  $("notifiche").hidden = false;
+  $("titolo-accesso").hidden = false;
+  if (attivazione) { messaggioNotifiche("Attivazione in corso…"); return; }
+  messaggioNotifiche("Controllo in corso…");
+  try {
+    const stato = await controlla(accesso());
+    if (mio === giroNotifiche) disegnaNotifiche(stato);
+  } catch (e) {
+    if (mio === giroNotifiche) messaggioNotifiche(testoErrore(e), "Attiva notifiche");
+  }
+}
+
+async function attivaNotifiche() {
+  const config = accesso();
+  if (!config || attivazione) return;
+  attivazione = true;
+  $("notifiche-attiva").hidden = true;
+  let esito;
+  let guasto;
+  try {
+    esito = await attiva(config, (testo) => messaggioNotifiche(testo));
+  } catch (e) {
+    // In lettura il 403 vuol dire token sbagliato; qui di solito manca il permesso Actions.
+    guasto = e instanceof ApiError ? e.message : "Iscrizione non riuscita: riprova.";
+  }
+  attivazione = false;
+  giroNotifiche++;
+  if (guasto) messaggioNotifiche(guasto, "Attiva notifiche");
+  else disegnaNotifiche(esito);
 }
 
 // --- lettura -----------------------------------------------------------------
@@ -183,11 +228,14 @@ $("cambia").addEventListener("click", () => {
   daRiprovare = false;
   avvisa("");
   mostraSetup();
+  mostraNotifiche();
 });
+$("notifiche-attiva").addEventListener("click", attivaNotifiche);
 $("annulla").addEventListener("click", carica);
 $("rimuovi").addEventListener("click", () => {
   if (!confirm("Rimuovere token e copia locale da questo telefono?")) return;
   giro++;
+  disiscrivi().catch(() => {}); // senza accesso il telefono non deve più ricevere nulla
   rimuoviAccesso();
   avvisa("");
   mostraSetup();

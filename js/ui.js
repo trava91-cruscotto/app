@@ -100,6 +100,27 @@ export function disegna(stato) {
   $("elenco").replaceChildren(...ordinati.map(scheda));
 }
 
+// [testo da mostrare, etichetta del pulsante (null: nessun pulsante)]
+const NOTIFICHE = {
+  "no": ["Questo browser non supporta le notifiche.", null],
+  "bloccate": ["Notifiche bloccate: consentile nelle impostazioni di Android per questa app, poi riapri le Impostazioni.", null],
+  "da-attivare": ["Non attive su questo telefono.", "Attiva notifiche"],
+  "attive": ["Attive su questo telefono.", "Invia di nuovo la notifica di prova"],
+  "non-salvate": ["Non salvata dopo 2 minuti: riprova.", "Attiva notifiche"],
+};
+
+export function disegnaNotifiche(stato) {
+  const [testo, pulsante] = NOTIFICHE[stato];
+  messaggioNotifiche(testo, pulsante);
+}
+
+// Senza etichetta il pulsante sparisce.
+export function messaggioNotifiche(testo, pulsante = null) {
+  $("notifiche-stato").textContent = testo;
+  $("notifiche-attiva").textContent = pulsante || "";
+  $("notifiche-attiva").hidden = !pulsante;
+}
+
 export function svuota() {
   ["valore", "pl", "aggiornato", "prezzati"].forEach((id) => { $(id).textContent = ""; });
   $("elenco").replaceChildren();

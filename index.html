@@ -28,11 +28,17 @@
         <p id="prezzati" class="tenue"></p>
       </div>
       <ul id="elenco" class="schede"></ul>
-      <button type="button" id="cambia" class="secondario">Cambia accesso</button>
+      <button type="button" id="cambia" class="secondario">Impostazioni</button>
     </section>
 
     <section id="vista-setup" hidden>
+      <div id="notifiche" class="blocco" hidden>
+        <h2>Notifiche</h2>
+        <p id="notifiche-stato" role="status"></p>
+        <button type="button" id="notifiche-attiva" hidden></button>
+      </div>
       <form id="form-setup" autocomplete="off">
+        <h2 id="titolo-accesso" hidden>Accesso</h2>
         <label for="campo-repo">Repository dei dati</label>
         <input id="campo-repo" type="text" placeholder="utente/repository"
                autocapitalize="none" autocorrect="off" spellcheck="false" required>
@@ -40,7 +46,7 @@
         <input id="campo-token" type="password" autocomplete="off"
                autocapitalize="none" autocorrect="off" spellcheck="false" required>
         <button type="submit">Collega</button>
-        <button type="button" id="annulla" class="secondario" hidden>Annulla</button>
+        <button type="button" id="annulla" class="secondario" hidden>Indietro</button>
         <button type="button" id="rimuovi" class="secondario" hidden>Rimuovi accesso e copia locale</button>
       </form>
     </section>

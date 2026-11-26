@@ -1,9 +1,10 @@
-// sw.js — tiene in cache i soli file dell'app, per aprirla senza rete.
+// sw.js — tiene in cache i soli file dell'app, per aprirla senza rete, e mostra
+// le notifiche anche ad app chiusa.
 //
 // I dati non passano da qui: arrivano da api.github.com (altra origine, con
 // token) e l'ultima copia buona sta nel localStorage.
 
-const CACHE = "ptf-v2"; // da aumentare a ogni pubblicazione
+const CACHE = "ptf-v3"; // da aumentare a ogni pubblicazione
 
 const SHELL = [
   "./",
@@ -13,6 +14,7 @@ const SHELL = [
   "js/main.js",
   "js/ui.js",
   "js/api.js",
+  "js/notifiche.js",
   "icons/icon.svg",
 ];
 
@@ -36,6 +38,31 @@ self.addEventListener("activate", (event) => {
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+  );
+});
+
+// Il testo arriva già pronto dal cloud. A ogni push va mostrata una notifica,
+// altrimenti Chrome ne mette una sua. Il "tag" tiene una sola notifica per
+// argomento; "renotify" la fa comunque suonare quando viene sostituita.
+self.addEventListener("push", (event) => {
+  let dati = {};
+  try { dati = event.data.json(); } catch { /* resta il testo generico */ }
+  const tag = typeof dati.tag === "string" && dati.tag ? dati.tag : undefined;
+  event.waitUntil(self.registration.showNotification(dati.titolo || "Portafoglio", {
+    body: dati.testo || "Apri l'app per vedere i dati.",
+    tag,
+    renotify: Boolean(tag),
+  }));
+});
+
+// Il tocco porta all'app: quella già aperta, se c'è.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((finestre) => {
+      const aperta = finestre.find((f) => f.url.startsWith(self.registration.scope));
+      return aperta ? aperta.focus() : self.clients.openWindow("./");
+    })
   );
 });
 

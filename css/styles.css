@@ -75,6 +75,12 @@ label, dt, .tenue { color: var(--tenue); font-size: 0.875rem; }
 .campi dd { font-size: 0.9375rem; font-weight: 500; overflow-wrap: anywhere; }
 .schede .segnale { margin-top: 8px; color: var(--avviso); font-size: 0.8125rem; }
 
+/* impostazioni */
+h2 { margin: 0 0 4px; font-size: 1.0625rem; }
+.blocco { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--bordo); }
+.blocco p { margin: 0; }
+button:disabled { opacity: 0.6; }
+
 label { display: block; margin: 12px 0 4px; }
 
 input, button {

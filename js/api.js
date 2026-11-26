@@ -1,4 +1,5 @@
-// api.js — l'unico punto che parla con GitHub. Solo lettura.
+// api.js — l'unico punto che parla con GitHub. Legge i file e avvia i workflow:
+// l'app non scrive mai nel repository.
 //
 // api.github.com ammette le chiamate dal browser, quindi non serve un server.
 // Repository e token arrivano da fuori: qui non c'è nessun valore fisso.
@@ -27,25 +28,37 @@ function errore(resp) {
   return new ApiError(`GitHub non risponde come previsto (errore ${resp.status}).`, "temporaneo");
 }
 
-export async function leggiJson({ repo, token }, percorso) {
-  let resp;
-  let testo;
+// Una chiamata autenticata -> testo della risposta, oppure ApiError.
+async function chiama({ repo, token }, percorso, accept, opzioni = {}) {
   try {
-    resp = await fetch(`${API_ROOT}/repos/${repo}/contents/${percorso}`, {
+    const resp = await fetch(`${API_ROOT}/repos/${repo}/${percorso}`, {
+      ...opzioni,
       headers: {
         "Authorization": `Bearer ${token}`,
-        "Accept": "application/vnd.github.raw+json",
+        "Accept": accept,
         "X-GitHub-Api-Version": "2022-11-28",
       },
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
     });
     if (!resp.ok) throw errore(resp);
-    testo = await resp.text();
+    return await resp.text();
   } catch (e) {
     if (e instanceof ApiError) throw e;
     throw new ApiError("Rete assente o troppo lenta.", "rete");
   }
+}
+
+// Chiede al cloud di eseguire un workflow già definito, che valida la richiesta.
+export async function avviaWorkflow(config, file, inputs) {
+  await chiama(config, `actions/workflows/${file}/dispatches`, "application/vnd.github+json", {
+    method: "POST",
+    body: JSON.stringify({ ref: "main", inputs }),
+  });
+}
+
+export async function leggiJson(config, percorso) {
+  const testo = await chiama(config, `contents/${percorso}`, "application/vnd.github.raw+json");
   try {
     return JSON.parse(testo);
   } catch {
