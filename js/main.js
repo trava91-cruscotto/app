@@ -1,6 +1,7 @@
 // main.js — collegamento al repository dei dati, lettura di stato.json, ultima copia.
 
 import { ApiError, leggiJson } from "./api.js";
+import { disegna, svuota } from "./ui.js";
 
 const CHIAVI = { repo: "ptf.repo", token: "ptf.token", copia: "ptf.stato" };
 const REPO_VALIDO = /^[A-Za-z0-9-]+\/(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
@@ -55,23 +56,19 @@ function copiaSalvata() {
 
 // --- schermate ---------------------------------------------------------------
 
-const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
-const percento = new Intl.NumberFormat("it-IT", {
-  minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "exceptZero",
-});
-const conSegno = new Intl.NumberFormat("it-IT", {
-  style: "currency", currency: "EUR", signDisplay: "exceptZero",
-});
-const quando = new Intl.DateTimeFormat("it-IT", {
-  weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
-  timeZone: "Europe/Rome",
-});
+// I numeri di un asset mai prezzato sono vuoti; quantità e carico ci sono sempre.
+function assetValido(a) {
+  return [a?.id, a?.nome, a?.stato].every((x) => typeof x === "string")
+    && [a.quantita, a.pmc_eur].every(Number.isFinite)
+    && [a.prezzo_eur, a.valore_eur, a.pl_eur, a.pl_pct].every((x) => x === null || Number.isFinite(x));
+}
 
 function formaValida(stato) {
   const t = stato?.totale;
   return stato?.schema === 1
     && !Number.isNaN(Date.parse(stato.aggiornato_il))
-    && [t?.valore_eur, t?.pl_eur, t?.pl_pct, t?.prezzati, t?.posizioni].every(Number.isFinite);
+    && [t?.valore_eur, t?.pl_eur, t?.pl_pct, t?.prezzati, t?.posizioni].every(Number.isFinite)
+    && Array.isArray(stato.asset) && stato.asset.every(assetValido);
 }
 
 function avvisa(testo) {
@@ -80,18 +77,14 @@ function avvisa(testo) {
 }
 
 function mostraDati(stato) {
-  const t = stato.totale;
-  $("valore").textContent = euro.format(t.valore_eur);
-  $("pl").textContent = `${conSegno.format(t.pl_eur)} (${percento.format(t.pl_pct)}%)`;
-  $("prezzati").textContent = `${t.prezzati} su ${t.posizioni}`;
-  $("aggiornato").textContent = quando.format(new Date(stato.aggiornato_il));
+  disegna(stato);
   $("vista-setup").hidden = true;
   $("vista-dati").hidden = false;
 }
 
 // Svuota anche i testi: con un accesso non valido nella pagina non resta nulla.
 function nascondiDati() {
-  ["valore", "pl", "prezzati", "aggiornato"].forEach((id) => { $(id).textContent = ""; });
+  svuota();
   $("vista-dati").hidden = true;
 }
 
@@ -108,9 +101,11 @@ function mostraSetup() {
 // --- lettura -----------------------------------------------------------------
 
 let giro = 0; // la risposta di una lettura superata non deve ridisegnare nulla
+let daRiprovare = false; // schermata di collegamento aperta solo perché mancava la rete
 
 async function carica() {
   const mio = ++giro;
+  daRiprovare = false;
   const config = accesso();
   if (!config) { mostraSetup(); return; }
 
@@ -137,6 +132,7 @@ async function carica() {
       avvisa(`${testo} Vedi l'ultima copia salvata.`);
     } else {
       mostraSetup();
+      daRiprovare = true;
       avvisa(`${testo} Non c'è ancora una copia salvata: riapri l'app per riprovare.`);
     }
   }
@@ -182,7 +178,12 @@ $("form-setup").addEventListener("submit", (evento) => {
   evento.preventDefault();
   collega($("campo-repo").value.trim(), $("campo-token").value.trim());
 });
-$("cambia").addEventListener("click", () => { giro++; avvisa(""); mostraSetup(); });
+$("cambia").addEventListener("click", () => {
+  giro++;
+  daRiprovare = false;
+  avvisa("");
+  mostraSetup();
+});
 $("annulla").addEventListener("click", carica);
 $("rimuovi").addEventListener("click", () => {
   if (!confirm("Rimuovere token e copia locale da questo telefono?")) return;
@@ -190,6 +191,12 @@ $("rimuovi").addEventListener("click", () => {
   rimuoviAccesso();
   avvisa("");
   mostraSetup();
+});
+// Quando l'app torna in primo piano rilegge i dati. Non lo fa sulla schermata di
+// collegamento: chi esce a copiare il token ritroverebbe i campi svuotati.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !accesso()) return;
+  if ($("vista-setup").hidden || (daRiprovare && !$("campo-token").value)) carica();
 });
 window.addEventListener("hashchange", () => {
   if (location.hash.startsWith("#setup=")) avvia();

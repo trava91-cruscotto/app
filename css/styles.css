@@ -1,4 +1,4 @@
-/* Stile minimo: la grafica vera arriva con riepilogo ed elenco. */
+/* Riepilogo in alto, poi una scheda per asset. */
 :root {
   color-scheme: dark;
   --sfondo: #14202b;
@@ -7,6 +7,8 @@
   --accento: #5fd0a5;
   --bordo: #324656;
   --avviso: #ffd27a;
+  --scheda: #1b2a37;
+  --perdita: #ff8f8f;
 }
 
 * { box-sizing: border-box; }
@@ -28,20 +30,50 @@ main {
 
 h1 { font-size: 1.25rem; }
 
-#messaggio {
+#messaggio, .avviso {
   padding: 12px;
   border: 1px solid var(--avviso);
   border-radius: 8px;
   color: var(--avviso);
 }
 
-.etichetta, dt, label { color: var(--tenue); font-size: 0.875rem; }
+label, dt, .tenue { color: var(--tenue); font-size: 0.875rem; }
 
-.etichetta { margin-bottom: 0; }
+.su { color: var(--accento); }
+.giu { color: var(--perdita); }
 
-.grande { margin-top: 4px; font-size: 2.25rem; font-weight: 700; }
+/* riepilogo */
+.riepilogo { margin-bottom: 20px; }
+.riepilogo p { margin: 0; }
+.grande { font-size: 2.25rem; font-weight: 700; }
+.riga-pl { font-size: 1.125rem; font-weight: 600; }
 
-dd { margin: 0 0 12px; font-size: 1.125rem; }
+/* schede degli asset */
+.schede { list-style: none; margin: 0; padding: 0; }
+.schede p, .schede dl, .schede dd { margin: 0; }
+.schede li {
+  margin-bottom: 10px;
+  padding: 12px;
+  background: var(--scheda);
+  border: 1px solid var(--bordo);
+  border-radius: 10px;
+}
+.testa { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.chi { min-width: 0; }
+.nome { font-weight: 600; overflow-wrap: anywhere; }
+.quanto { text-align: right; white-space: nowrap; }
+.controvalore { font-size: 1.25rem; font-weight: 700; }
+.schede .campi {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bordo);
+}
+.campi dt { font-size: 0.75rem; }
+.campi dd { font-size: 0.9375rem; font-weight: 500; overflow-wrap: anywhere; }
+.schede .segnale { margin-top: 8px; color: var(--avviso); font-size: 0.8125rem; }
 
 label { display: block; margin: 12px 0 4px; }
 

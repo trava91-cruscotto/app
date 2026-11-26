@@ -3,7 +3,7 @@
 // I dati non passano da qui: arrivano da api.github.com (altra origine, con
 // token) e l'ultima copia buona sta nel localStorage.
 
-const CACHE = "ptf-v1"; // da aumentare a ogni pubblicazione
+const CACHE = "ptf-v2"; // da aumentare a ogni pubblicazione
 
 const SHELL = [
   "./",
@@ -11,6 +11,7 @@ const SHELL = [
   "manifest.webmanifest",
   "css/styles.css",
   "js/main.js",
+  "js/ui.js",
   "js/api.js",
   "icons/icon.svg",
 ];

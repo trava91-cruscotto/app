@@ -19,13 +19,15 @@
     <p id="messaggio" role="status" hidden></p>
 
     <section id="vista-dati" hidden>
-      <p class="etichetta">Controvalore</p>
-      <p id="valore" class="grande"></p>
-      <dl>
-        <dt>Guadagno/perdita</dt><dd id="pl"></dd>
-        <dt>Asset prezzati</dt><dd id="prezzati"></dd>
-        <dt>Aggiornato</dt><dd id="aggiornato"></dd>
-      </dl>
+      <p id="vecchi" class="avviso" hidden>Dati non aggiornati da più di 5 ore.</p>
+      <div class="riepilogo">
+        <p class="tenue">Controvalore</p>
+        <p id="valore" class="grande"></p>
+        <p id="pl" class="riga-pl"></p>
+        <p id="aggiornato" class="tenue"></p>
+        <p id="prezzati" class="tenue"></p>
+      </div>
+      <ul id="elenco" class="schede"></ul>
       <button type="button" id="cambia" class="secondario">Cambia accesso</button>
     </section>
 

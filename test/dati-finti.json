@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "aggiornato_il": "2026-11-24T08:00:40+01:00",
+  "fascia": "2026-11-24T08",
+  "totale": {"valore_eur": 7435.43, "costo_eur": 6776.14, "pl_eur": 659.29, "pl_pct": 9.73, "prezzati": 8, "posizioni": 9},
+  "asset": [
+    {"id": "AAA", "nome": "Azienda Alfa", "tipo": "stock", "quantita": 12.5, "pmc_eur": 42.3, "prezzo_eur": 58.74, "valore_eur": 734.25, "pl_eur": 205.5, "pl_pct": 38.87, "fonte": "prova", "prezzo_del": "2026-11-24T08:00:31+01:00", "stato": "ok"},
+    {"id": "BBB", "nome": "Beta Industries", "tipo": "stock", "quantita": 3.418, "pmc_eur": 210.0, "prezzo_eur": 174.2, "valore_eur": 595.42, "pl_eur": -122.36, "pl_pct": -17.05, "fonte": "prova", "prezzo_del": "2026-11-24T08:00:31+01:00", "stato": "ok"},
+    {"id": "CCC", "nome": "Fondo Inventato Mondo Sviluppato Accumulazione", "tipo": "etf", "quantita": 41, "pmc_eur": 88.15, "prezzo_eur": 96.02, "valore_eur": 3936.82, "pl_eur": 322.67, "pl_pct": 8.93, "fonte": "prova", "prezzo_del": "2026-11-24T08:00:31+01:00", "stato": "ok"},
+    {"id": "DDD", "nome": "Delta Coin", "tipo": "crypto", "quantita": 0.01234567, "pmc_eur": 61250.0, "prezzo_eur": 78410.55, "valore_eur": 968.03, "pl_eur": 211.86, "pl_pct": 28.02, "fonte": "prova", "prezzo_del": "2026-11-24T08:00:31+01:00", "stato": "ok"},
+    {"id": "EEE", "nome": "Epsilon Energia", "tipo": "stock", "quantita": 150, "pmc_eur": 3.12, "prezzo_eur": 2.87, "valore_eur": 430.5, "pl_eur": -37.5, "pl_pct": -8.01, "fonte": "prova", "prezzo_del": "2026-11-23T20:00:28+01:00", "stato": "vecchio"},
+    {"id": "FFF", "nome": "Materia Prima di Prova", "tipo": "etc", "quantita": 7.25, "pmc_eur": 33.4, "prezzo_eur": 41.95, "valore_eur": 304.14, "pl_eur": 61.99, "pl_pct": 25.6, "fonte": "prova", "prezzo_del": "2026-11-23T16:00:19+01:00", "stato": "sospetto"},
+    {"id": "GGG", "nome": "Gamma Salute", "tipo": "stock", "quantita": 9, "pmc_eur": 27.8, "prezzo_eur": 26.11, "valore_eur": 234.99, "pl_eur": -15.21, "pl_pct": -6.08, "fonte": "prova", "prezzo_del": "2026-11-24T08:00:31+01:00", "stato": "ok"},
+    {"id": "HHH", "nome": "Eta Token", "tipo": "crypto", "quantita": 2450, "pmc_eur": 0.0812, "prezzo_eur": 0.0944, "valore_eur": 231.28, "pl_eur": 32.34, "pl_pct": 16.26, "fonte": "prova", "prezzo_del": "2026-11-24T08:00:31+01:00", "stato": "ok"},
+    {"id": "III", "nome": "Iota Appena Entrata", "tipo": "stock", "quantita": 5, "pmc_eur": 19.9, "prezzo_eur": null, "valore_eur": null, "pl_eur": null, "pl_pct": null, "fonte": null, "prezzo_del": null, "stato": "mancante"}
+  ]
+}

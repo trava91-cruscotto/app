@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anteprima B: righe compatte</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    h1 { margin: 0 0 12px; }
+    #messaggio { margin: 0 0 12px; font-size: .875rem; }
+    p { margin: 0; }
+    .riepilogo { margin-bottom: 20px; }
+    .grande { margin: 0; }
+    .riga-pl { font-size: 1.125rem; font-weight: 600; }
+    .tenue { color: var(--tenue); font-size: .875rem; }
+    .su { color: var(--accento); }
+    .giu { color: #ff8f8f; }
+    ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--bordo); }
+    li { padding: 10px 0; border-bottom: 1px solid var(--bordo); }
+    .riga { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .riga > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .riga > :last-child { flex: none; white-space: nowrap; }
+    .nome, .controvalore { font-weight: 600; }
+    .piccolo { font-size: .8125rem; font-variant-numeric: tabular-nums; }
+    .segno { margin-top: 2px; color: var(--avviso); font-size: .8125rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Portafoglio</h1>
+    <p id="messaggio">Dati non aggiornati da più di 5 ore.</p>
+    <section class="riepilogo">
+      <p class="tenue">Controvalore</p>
+      <p id="valore" class="grande"></p>
+      <p id="pl" class="riga-pl"></p>
+      <p id="aggiornato" class="tenue"></p>
+    </section>
+    <ul id="elenco"></ul>
+  </main>
+  <script type="module">
+    const num = (min, max, extra = {}) => new Intl.NumberFormat("it-IT",
+      { minimumFractionDigits: min, maximumFractionDigits: max, useGrouping: "always", ...extra });
+    const E = " €";
+    const soldi = (x) => x === null ? "—" : num(2, 2).format(x) + E;
+    const prezzo = (x) => x === null ? "—" : num(2, Math.abs(x) < 1 ? 4 : 2).format(x) + E;
+    const diff = (x) => num(2, 2, { signDisplay: "exceptZero" }).format(x);
+    const quantita = (x) => num(0, 8).format(x);
+    const classe = (x) => x > 0 ? "su" : x < 0 ? "giu" : "";
+    const quando = (s) => new Intl.DateTimeFormat("it-IT", { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }).format(new Date(s));
+    const el = (tag, cls, testo) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (testo !== undefined) n.textContent = testo;
+      return n;
+    };
+    const riga = (cls, sinistra, destra) => {
+      const r = el("div", "riga " + cls);
+      r.append(sinistra, destra);
+      return r;
+    };
+    const segni = {
+      vecchio: (a) => `Prezzo vecchio: è di ${quando(a.prezzo_del)}`,
+      sospetto: (a) => `Prezzo nuovo sospetto: resta quello di ${quando(a.prezzo_del)}`,
+      mancante: () => "Mai prezzato: fuori dai totali",
+    };
+
+    const d = await (await fetch("dati-finti.json")).json();
+    const t = d.totale;
+    document.getElementById("valore").textContent = soldi(t.valore_eur);
+    const pl = document.getElementById("pl");
+    pl.textContent = `${diff(t.pl_eur)}${E}  (${diff(t.pl_pct)}%)`;
+    pl.className = "riga-pl " + classe(t.pl_eur);
+    document.getElementById("aggiornato").textContent = `Aggiornato ${quando(d.aggiornato_il)} · ${t.prezzati} prezzati su ${t.posizioni}`;
+
+    for (const a of [...d.asset].sort((x, y) => (y.valore_eur ?? -1) - (x.valore_eur ?? -1))) {
+      const li = el("li");
+      li.append(
+        riga("", el("span", "nome", a.nome), el("span", "controvalore", soldi(a.valore_eur))),
+        riga("piccolo", el("span", "tenue", `${a.id} · quantità ${quantita(a.quantita)}`),
+          el("span", classe(a.pl_eur), a.pl_eur === null ? "—" : `${diff(a.pl_eur)}${E} · ${diff(a.pl_pct)}%`)),
+        el("p", "tenue piccolo", `prezzo ${prezzo(a.prezzo_eur)} · carico ${prezzo(a.pmc_eur)}`),
+      );
+      if (segni[a.stato]) li.append(el("p", "segno", "⚠ " + segni[a.stato](a)));
+      document.getElementById("elenco").append(li);
+    }
+  </script>
+</body>
+</html>
