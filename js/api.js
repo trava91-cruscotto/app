@@ -57,6 +57,47 @@ export async function avviaWorkflow(config, file, inputs) {
   });
 }
 
+const OGNI_MS = 10 * 1000;
+const AL_MASSIMO_MS = 2 * 60 * 1000;
+
+const stessaVoce = (a, b) => ["attiva", "su_pct", "giu_pct"].every((k) => a?.[k] === b[k]);
+
+/** La mappa per asset di soglie.json. */
+export async function leggiSoglie(config) {
+  const file = await leggiJson(config, "soglie.json");
+  if (file?.schema !== 1 || !file.asset || typeof file.asset !== "object") {
+    throw new ApiError("Il file delle soglie ha un formato non riconosciuto.", "formato");
+  }
+  return file.asset;
+}
+
+/** Chiede a imposta.yml di salvare le soglie di un asset e rilegge finché non le trova.
+ *  Torna { salvate, soglie }: soglie è l'ultima mappa letta. Se nel repository ci sono
+ *  già, non avvia nulla. */
+export async function salvaSoglie(config, asset, voce, avviato) {
+  let soglie = await leggiSoglie(config);
+  if (stessaVoce(soglie[asset], voce)) return { salvate: true, soglie };
+
+  await avviaWorkflow(config, "imposta.yml", {
+    richiesta: JSON.stringify({ tipo: "soglie", asset, ...voce }),
+  });
+  avviato();
+
+  const scadenza = Date.now() + AL_MASSIMO_MS;
+  // Il controllo sta in fondo: se il telefono ha sospeso l'app oltre la scadenza,
+  // si rilegge comunque una volta prima di dire «non salvato».
+  do {
+    await new Promise((fatto) => setTimeout(fatto, OGNI_MS));
+    try {
+      soglie = await leggiSoglie(config);
+      if (stessaVoce(soglie[asset], voce)) return { salvate: true, soglie };
+    } catch (e) {
+      if (e.kind === "accesso") throw e; // un buco di rete invece non ferma l'attesa
+    }
+  } while (Date.now() < scadenza);
+  return { salvate: false, soglie };
+}
+
 export async function leggiJson(config, percorso) {
   const testo = await chiama(config, `contents/${percorso}`, "application/vnd.github.raw+json");
   try {

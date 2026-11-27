@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <!-- Solo file propri, e in rete solo l'API di GitHub. -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'none'; form-action 'none'">
@@ -51,6 +51,33 @@
       </form>
     </section>
   </main>
+
+  <dialog id="pannello" aria-labelledby="pannello-nome">
+    <form id="form-soglie" autocomplete="off" novalidate>
+      <h2 id="pannello-nome"></h2>
+      <p id="pannello-ora" class="tenue"></p>
+      <label class="interruttore">
+        <span>Notifica</span>
+        <input id="soglia-attiva" type="checkbox" role="switch">
+      </label>
+      <label for="soglia-su">Avvisami al rialzo, sul prezzo di carico</label>
+      <div class="soglia">
+        <span class="su">+</span>
+        <input id="soglia-su" type="text" inputmode="decimal" placeholder="nessuna">
+        <span>%</span>
+      </div>
+      <label for="soglia-giu">Avvisami al ribasso, sul prezzo di carico</label>
+      <div class="soglia">
+        <span class="giu">−</span>
+        <input id="soglia-giu" type="text" inputmode="decimal" placeholder="nessuna">
+        <span>%</span>
+      </div>
+      <p id="pannello-nota" class="tenue" hidden>Senza soglie non arriverà nessuna notifica.</p>
+      <p id="pannello-esito" role="status"></p>
+      <button type="submit" id="pannello-salva">Salva</button>
+      <button type="button" id="pannello-chiudi" class="secondario">Chiudi</button>
+    </form>
+  </dialog>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

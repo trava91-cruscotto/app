@@ -4,7 +4,7 @@
 // I dati non passano da qui: arrivano da api.github.com (altra origine, con
 // token) e l'ultima copia buona sta nel localStorage.
 
-const CACHE = "ptf-v3"; // da aumentare a ogni pubblicazione
+const CACHE = "ptf-v4"; // da aumentare a ogni pubblicazione
 
 const SHELL = [
   "./",

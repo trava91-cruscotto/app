@@ -54,11 +54,20 @@ function elemento(tag, classe, testo) {
   return nodo;
 }
 
-function scheda(a) {
+function scheda(a, conNotifica) {
   const li = elemento("li");
+  li.dataset.id = a.id;
+  li.tabIndex = 0;
+  li.setAttribute("role", "button");
 
+  const sigla = elemento("p", "tenue", a.id);
+  if (conNotifica) {
+    const campanella = elemento("span", "campanella", " 🔔");
+    campanella.setAttribute("aria-label", "notifica attiva");
+    sigla.append(campanella);
+  }
   const chi = elemento("div", "chi");
-  chi.append(elemento("p", "nome", a.nome), elemento("p", "tenue", a.id));
+  chi.append(elemento("p", "nome", a.nome), sigla);
   const quanto = elemento("div", "quanto");
   quanto.append(
     elemento("p", "controvalore", soldi(a.valore_eur)),
@@ -87,7 +96,8 @@ function scheda(a) {
   return li;
 }
 
-export function disegna(stato) {
+// `soglie` è la mappa per asset di soglie.json, oppure null se non è stata letta.
+export function disegna(stato, soglie) {
   const t = stato.totale;
   $("vecchi").hidden = !datiVecchi(stato.aggiornato_il);
   $("valore").textContent = soldi(t.valore_eur);
@@ -97,7 +107,81 @@ export function disegna(stato) {
   $("prezzati").textContent = `${t.prezzati} asset prezzati su ${t.posizioni}`;
   // Dal controvalore più alto; chi non ha prezzo va in fondo.
   const ordinati = [...stato.asset].sort((x, y) => (y.valore_eur ?? -1) - (x.valore_eur ?? -1));
-  $("elenco").replaceChildren(...ordinati.map(scheda));
+  // Ridisegnando non si perde l'asset su cui sta il cursore della tastiera.
+  const scelto = document.activeElement?.closest?.("#elenco li")?.dataset.id;
+  $("elenco").replaceChildren(...ordinati.map((a) => scheda(a, soglie?.[a.id]?.attiva === true)));
+  if (scelto) [...$("elenco").children].find((li) => li.dataset.id === scelto)?.focus({ preventScroll: true });
+}
+
+// --- pannello delle soglie ---------------------------------------------------
+
+// I limiti sono quelli di imposta.py. Il segno è fisso accanto al campo: si
+// scrive solo il numero (la tastiera numerica di Android può non avere il meno).
+const DIREZIONI = {
+  su: { nome: "Rialzo", segni: ["+"], massimo: 1000 },
+  giu: { nome: "Ribasso", segni: ["-", "−"], massimo: 100 },
+};
+const SCRITTO = /^([+\-−]?)\s*(\d+(?:[.,]\d*)?|[.,]\d+)$/;
+
+/** Testo del campo -> { valore } (null se vuoto) oppure { errore }. */
+export function leggiSoglia(testo, direzione) {
+  const { nome, segni, massimo } = DIREZIONI[direzione];
+  const pulito = testo.trim().replace(/\s*%$/, "");
+  if (!pulito) return { valore: null };
+  const parti = SCRITTO.exec(pulito);
+  if (!parti) return { errore: `${nome}: scrivi solo un numero, per esempio 7,5.` };
+  if (parti[1] && !segni.includes(parti[1])) {
+    return { errore: `${nome}: il segno è già «${segni.at(-1)}», scrivi solo il numero.` };
+  }
+  const cifre = parti[2].replace(",", ".");
+  const valore = Number(cifre);
+  if (!(valore > 0 && valore <= massimo)) {
+    return { errore: `${nome}: serve un numero maggiore di 0 e al massimo ${massimo}.` };
+  }
+  // Più severo del cloud: contano anche gli zeri, così «1.000» scritto per dire
+  // mille non diventa in silenzio 1%.
+  if ((cifre.split(".")[1] || "").length > 2) {
+    return { errore: `${nome}: al massimo due decimali.` };
+  }
+  return { valore: direzione === "giu" ? -valore : valore };
+}
+
+const nelCampo = (x) => (Number.isFinite(x) ? String(Math.abs(x)).replace(".", ",") : "");
+
+export function intestaPannello(a) {
+  $("pannello-nome").textContent = a.nome;
+  $("pannello-ora").textContent = a.pl_pct == null ? `${a.id} · senza prezzo`
+    : `${a.id} · ora ${percento(a.pl_pct)} sul carico`;
+}
+
+/** `voce`: le soglie salvate dell'asset; undefined se non ne ha. */
+export function compilaPannello(voce) {
+  $("soglia-attiva").checked = voce?.attiva === true;
+  $("soglia-su").value = nelCampo(voce?.su_pct);
+  $("soglia-giu").value = nelCampo(voce?.giu_pct);
+  notaPannello();
+}
+
+/** Quello che si sta per salvare: { voce } oppure { errore }. */
+export function leggiPannello() {
+  const su = leggiSoglia($("soglia-su").value, "su");
+  const giu = leggiSoglia($("soglia-giu").value, "giu");
+  const errore = su.errore || giu.errore;
+  return errore ? { errore }
+    : { voce: { attiva: $("soglia-attiva").checked, su_pct: su.valore, giu_pct: giu.valore } };
+}
+
+// Accesa senza soglie è ammessa, ma va detto che non succederà nulla.
+export function notaPannello() {
+  $("pannello-nota").hidden = !($("soglia-attiva").checked
+    && !$("soglia-su").value.trim() && !$("soglia-giu").value.trim());
+}
+
+/** `tipo`: "" | "fatto" | "errore". `occupato` blocca il pulsante Salva. */
+export function messaggioPannello(testo, { tipo = "", occupato = false } = {}) {
+  $("pannello-esito").textContent = testo;
+  $("pannello-esito").className = tipo;
+  $("pannello-salva").disabled = occupato;
 }
 
 // [testo da mostrare, etichetta del pulsante (null: nessun pulsante)]

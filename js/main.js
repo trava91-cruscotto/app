@@ -1,10 +1,13 @@
 // main.js — collegamento al repository dei dati, lettura di stato.json, ultima copia.
 
-import { ApiError, leggiJson } from "./api.js";
+import { ApiError, leggiJson, leggiSoglie, salvaSoglie } from "./api.js";
 import { attiva, controlla, disiscrivi } from "./notifiche.js";
-import { disegna, disegnaNotifiche, messaggioNotifiche, svuota } from "./ui.js";
+import {
+  compilaPannello, disegna, disegnaNotifiche, intestaPannello, leggiPannello,
+  messaggioNotifiche, messaggioPannello, notaPannello, svuota,
+} from "./ui.js";
 
-const CHIAVI = { repo: "ptf.repo", token: "ptf.token", copia: "ptf.stato" };
+const CHIAVI = { repo: "ptf.repo", token: "ptf.token", copia: "ptf.stato", soglie: "ptf.soglie" };
 const REPO_VALIDO = /^[A-Za-z0-9-]+\/(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
 const TOKEN_VALIDO = /^[A-Za-z0-9_]+$/;
 
@@ -36,7 +39,7 @@ function accesso() {
 
 // Cambiando accesso la copia salvata non vale più.
 function salvaAccesso(repo, token) {
-  scrivi(CHIAVI.copia, null);
+  dimenticaCopie();
   accessoInMemoria = { repo, token };
   return scrivi(CHIAVI.repo, repo) && scrivi(CHIAVI.token, token);
 }
@@ -53,6 +56,28 @@ function copiaSalvata() {
   } catch {
     return null;
   }
+}
+
+// Le soglie stanno anche sul telefono, per la campanella senza rete.
+let soglie = null; // mappa per asset; null finché non sono note
+
+function ricordaSoglie(nuove) {
+  soglie = nuove;
+  scrivi(CHIAVI.soglie, nuove && JSON.stringify(nuove));
+}
+
+function sogliaSalvata() {
+  try {
+    const copia = JSON.parse(leggi(CHIAVI.soglie));
+    return copia && typeof copia === "object" ? copia : null;
+  } catch {
+    return null;
+  }
+}
+
+function dimenticaCopie() {
+  scrivi(CHIAVI.copia, null);
+  ricordaSoglie(null);
 }
 
 // --- schermate ---------------------------------------------------------------
@@ -77,14 +102,19 @@ function avvisa(testo) {
   $("messaggio").hidden = !testo;
 }
 
+let mostrato = null; // lo stato disegnato in pagina
+
 function mostraDati(stato) {
-  disegna(stato);
+  mostrato = stato;
+  disegna(stato, soglie);
   $("vista-setup").hidden = true;
   $("vista-dati").hidden = false;
 }
 
 // Svuota anche i testi: con un accesso non valido nella pagina non resta nulla.
 function nascondiDati() {
+  mostrato = null;
+  $("pannello").close();
   svuota();
   $("vista-dati").hidden = true;
 }
@@ -143,6 +173,111 @@ async function attivaNotifiche() {
   else disegnaNotifiche(esito);
 }
 
+// --- soglie ------------------------------------------------------------------
+
+let giroSoglie = 0;       // una lettura superata non deve rimettere valori vecchi
+let aperto = null;        // id dell'asset nel pannello
+let modificato = false;   // i campi toccati non vanno sovrascritti
+let salvataggio = null;   // { id, voce, testo } finché è in corso: uno per volta
+
+const stessoAccesso = (config) => accesso()?.repo === config.repo && accesso()?.token === config.token;
+
+// Se la lettura fallisce restano le soglie già note: i dati si vedono comunque.
+async function aggiornaSoglie(config) {
+  const mio = ++giroSoglie;
+  let guasto = null;
+  try {
+    const nuove = await leggiSoglie(config);
+    if (mio !== giroSoglie || !stessoAccesso(config)) return;
+    ricordaSoglie(nuove);
+    if (mostrato) disegna(mostrato, soglie);
+  } catch (e) {
+    if (mio !== giroSoglie || !stessoAccesso(config)) return;
+    guasto = testoErrore(e);
+  }
+  riempiPannello(guasto);
+}
+
+// Porta nel pannello aperto le soglie note, senza toccare quello che si sta scrivendo.
+function riempiPannello(guasto = null) {
+  if (!aperto || !$("pannello").open) return;
+  if (salvataggio?.id === aperto) return;
+  if (!modificato) compilaPannello(soglie ? soglie[aperto] : undefined);
+  if (modificato) return; // resta il messaggio sull'ultimo tentativo
+  if (salvataggio) {
+    messaggioPannello(`Attendi: salvataggio di ${salvataggio.id} in corso.`, { occupato: true });
+  } else if (!soglie) {
+    // Senza i valori attuali non si salva: si rischierebbe di cancellarli.
+    messaggioPannello(guasto ? `Soglie non lette. ${guasto}` : "Leggo le soglie…",
+      { tipo: guasto ? "errore" : "", occupato: true });
+  } else {
+    messaggioPannello(guasto ? `${guasto} Vedi gli ultimi valori letti.` : "",
+      { tipo: guasto ? "errore" : "" });
+  }
+}
+
+function apriPannello(id) {
+  const asset = mostrato?.asset.find((a) => a.id === id);
+  if (!asset) return;
+  aperto = id;
+  modificato = false;
+  intestaPannello(asset);
+  if (salvataggio?.id === id) {
+    compilaPannello(salvataggio.voce);
+    messaggioPannello(salvataggio.testo, { occupato: true });
+    $("pannello").showModal();
+    return;
+  }
+  $("pannello").showModal();
+  riempiPannello();
+  aggiornaSoglie(accesso());
+}
+
+async function salva() {
+  const config = accesso();
+  if (!config || !aperto || !soglie || salvataggio) return;
+  const { voce, errore } = leggiPannello();
+  if (errore) { messaggioPannello(errore, { tipo: "errore" }); return; }
+
+  const id = aperto;
+  const qui = () => $("pannello").open && aperto === id;
+  const mio = { id, voce, testo: "In salvataggio…" };
+  salvataggio = mio;
+  giroSoglie++; // le letture già partite non contano più
+  modificato = true;
+  messaggioPannello(mio.testo, { occupato: true });
+
+  let esito;
+  let guasto;
+  try {
+    esito = await salvaSoglie(config, id, voce, () => {
+      mio.testo = "In salvataggio: di solito serve meno di un minuto…";
+      if (qui()) messaggioPannello(mio.testo, { occupato: true });
+    });
+  } catch (e) {
+    guasto = testoErrore(e);
+  }
+  salvataggio = null;
+  if (!stessoAccesso(config)) return;
+
+  if (esito) {
+    giroSoglie++;
+    ricordaSoglie(esito.soglie);
+    if (mostrato) disegna(mostrato, soglie);
+  }
+  const riuscito = Boolean(esito?.salvate);
+  const testo = riuscito ? "Salvato." : guasto ? `Non salvato. ${guasto}` : "Non salvato, riprova.";
+  if (qui()) {
+    modificato = !riuscito; // se non è andata, quello che hai scritto resta
+    messaggioPannello(testo, { tipo: riuscito ? "fatto" : "errore" });
+    return;
+  }
+  if (!riuscito) avvisa(`Soglie di ${id}: ${testo}`);
+  // Un altro asset aperto stava aspettando: se ci hai già scritto, resta com'è.
+  if (modificato) messaggioPannello("");
+  else riempiPannello();
+}
+
 // --- lettura -----------------------------------------------------------------
 
 let giro = 0; // la risposta di una lettura superata non deve ridisegnare nulla
@@ -154,6 +289,7 @@ async function carica() {
   const config = accesso();
   if (!config) { mostraSetup(); return; }
 
+  soglie ??= sogliaSalvata();
   const copia = copiaSalvata();
   if (copia) mostraDati(copia);
   else { nascondiDati(); $("vista-setup").hidden = true; }
@@ -166,11 +302,12 @@ async function carica() {
     scrivi(CHIAVI.copia, JSON.stringify(stato));
     mostraDati(stato);
     avvisa("");
+    aggiornaSoglie(config);
   } catch (e) {
     if (mio !== giro) return;
     const testo = e instanceof ApiError ? e.message : "Errore inatteso.";
     if (e.kind === "accesso") {
-      scrivi(CHIAVI.copia, null);
+      dimenticaCopie();
       mostraSetup();
       avvisa(testo);
     } else if (copia) {
@@ -230,6 +367,31 @@ $("cambia").addEventListener("click", () => {
   mostraSetup();
   mostraNotifiche();
 });
+$("elenco").addEventListener("click", (evento) => {
+  const li = evento.target.closest("li");
+  if (li) apriPannello(li.dataset.id);
+});
+$("elenco").addEventListener("keydown", (evento) => {
+  const li = evento.target.closest("li");
+  if (!li || (evento.key !== "Enter" && evento.key !== " ")) return;
+  evento.preventDefault();
+  apriPannello(li.dataset.id);
+});
+$("form-soglie").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+  salva();
+});
+$("form-soglie").addEventListener("input", () => {
+  // Prima che le soglie siano note non conta: arrivate, riempiono i campi.
+  modificato = Boolean(soglie);
+  notaPannello();
+  if (!salvataggio && soglie) messaggioPannello("");
+});
+$("pannello-chiudi").addEventListener("click", () => $("pannello").close());
+// Il tocco sullo sfondo scuro chiude il pannello.
+$("pannello").addEventListener("click", (evento) => {
+  if (evento.target === $("pannello")) $("pannello").close();
+});
 $("notifiche-attiva").addEventListener("click", attivaNotifiche);
 $("annulla").addEventListener("click", carica);
 $("rimuovi").addEventListener("click", () => {
@@ -237,6 +399,7 @@ $("rimuovi").addEventListener("click", () => {
   giro++;
   disiscrivi().catch(() => {}); // senza accesso il telefono non deve più ricevere nulla
   rimuoviAccesso();
+  soglie = null;
   avvisa("");
   mostraSetup();
 });
